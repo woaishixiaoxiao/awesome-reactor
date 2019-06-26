@@ -85,7 +85,7 @@ int input_buffer::read_data(int fd) {
             return -1;            
         }
 	}else {
-		assert(_buf->head == 0);//这里为什么必须是要大于0
+		assert(_buf->head == 0);//这里为什么必须是要为0
 		if(_buf->capacity < rn + _buf->length) {
 			io_buffer *new_buf = new io_buffer(rn + _buf->length);
 			if (!new_buf)
@@ -107,4 +107,62 @@ int input_buffer::read_data(int fd) {
         _buf->length += ret;
     }
     return ret;
+}
+
+int input_buffer::adjust() {
+	if(_buf) {
+		_buf->adjust();
+	}
+}
+
+void output_buffer::adjust() {
+	if(_buf) {
+		_buf->adjust();
+	}
+}
+
+//每次用户往用户缓冲写数据的时候都是缓冲的开头开始写。
+//用户从缓冲写到内核tcp发送缓冲的时候，写完需要进行以下跳转，使得head为0；
+//在一个线程中执行的，不存在并发。
+int output_buffer::write_fd(int fd) {
+	assert(_buf && _buf->head == 0);//每次写完后
+	int writed;
+	do {
+		writed = ::write(fd, _buf->data + _buf->head, _buf->length);
+	}while(writed == -1 && error == EINTR);
+	if(writed > 0) { //这里必须要做判断啊，要是ret == -1呢
+		_buf->pop(ret);
+		_buf->adjust();
+	}
+	if(writed == -1 && errno == EAGAIN) {
+		writed = 0;
+	}
+	return writed;
+}
+int output_buffer::send_data(const char *data, int datalen) {
+	if(!_buf) {
+		_buf = buffer_pool:ins()->alloc(datalen);
+		if (!_buf)
+        {
+            error_log("no idle for alloc io_buffer");
+            return -1;
+        }
+    }
+	}else {
+		assert(_buf->head == 0); 
+		if(_buf->capacity < datalen + _buf->length) {
+			io_buffer *new_buffer = buffer_pool::ins()->alloc(datalen + _buf->length);
+			f (!new_buf)
+            {
+                error_log("no idle for alloc io_buffer");
+                return -1;
+            }
+			new_buffer->copy(_buf);
+			buffer_pool::ins()->revert(_buf);
+			_buf = _new_buf;
+		}
+	}
+	::memcpy(_buf->data + _buf->length, data, datalen);
+	_buf->length += datalen;
+	return 0;
 }

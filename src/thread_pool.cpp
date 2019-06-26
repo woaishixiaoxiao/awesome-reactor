@@ -9,7 +9,13 @@ void msg_comming_cb(event_loop *loop, int fd, void *args) {
 		queue_msg msg_one = msgs.front();
 		msgs.pop();
 		if(msg_one.cmd_type == queue_msg::NEW_CONN) {//当有客户连接来的时候，
-			
+			tcp_conn* conn = tcp_server::conns[msg.connfd];
+			if(tcp_conn) {
+				conn->init(msg.connfd, loop);
+			}else {
+				tcp_server::conns[msg.connfd] = new tcp_conn(mgs.connfd, loop);
+				exit_if(tcp_server::conns[msg.connfd] == NULL, "new tcp_conn");
+			}
 		}else if(msg_one.cmd_type == queue_msg::NEW_TASK) {
 			loop->add_task(msg.task, msg.args);//主进程可以通过thread_pool中的run_task向子进程中添加任务。
 		}else if(msg_one.cmd_type === queue_msg::STOP_THD) {//主进程希望停止子进程

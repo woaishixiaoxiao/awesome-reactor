@@ -4,7 +4,8 @@
 class event_loop;//前向声明，后面只能用引用的格式
 
 struct commu_head {
-	int 
+	int cmdid;
+	int length;
 };
 //采取多线程模式的时候，主线程接受客户的连接或是执行任务的请求，并将此任务用下面的该结构体表示。
 //每个子进程均会绑定一个event_loop，
@@ -27,3 +28,8 @@ struct queue_msg {
 		};
 	};
 };
+
+#define COMMU_HEAD_LENGTH 8
+#define MSG_LENGTH_LIMIT ( 65535 - COMMU_HEAD_LENGTH )
+
+#endif

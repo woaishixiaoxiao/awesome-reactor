@@ -102,5 +102,13 @@ class input_buffer : public tcp_buffer {
 	public:
 		int read_data(int fd);
 		const char *data() const { return _buf? _buf->data + _buf->head : NULL; }
+		void adjust();
+};
+
+class output_buffer : public tcp_buffer {
+	public:
+		int write_fd(int fd);
+		int send_data(const char *data, int datalen);
+		void adjust();
 };
 #endif

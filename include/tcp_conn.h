@@ -10,8 +10,8 @@ class tcp_conn {
 	private:
 		int _connfd;
 		event_loop *_loop;
-		input_buffer ibuf;
-		output_buffer obuf;
+		input_buffer _ibuf;
+		output_buffer _obuf;
 	public:
 		tcp_conn(int connfd, event_loop *loop) { init(connfd, loop); }
 		void init(int connfd, event_loop *loop);
