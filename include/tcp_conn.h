@@ -6,7 +6,7 @@
 //这个类要提供注册的回调函数。
 //每个已经连接的客户都应该对应这一个类
 //该类中包含用户的读写缓冲，读写缓冲是从内存池中分配出来的。
-class tcp_conn {
+class tcp_conn: public net_commu {
 	private:
 		int _connfd;
 		event_loop *_loop;
