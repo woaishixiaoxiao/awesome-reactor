@@ -129,12 +129,31 @@ void event_loop::del_ioev(int fd) {
 }
 
 /*下面几个和时间相关的后面在实现*/
+
+//这个是ts是绝对时间。
 int event_loop::run_at(timer_callback cb, void *args, uint64_t ts) {
+	timer_event te(cb, args, ts);
+	return _timer_que->add_timer(te);
 }
+
+//下面这两个都是在多长时间以后，一个是一次性的，一个是有间隔的。
 int event_loop::run_after(time_callback cb, void *args, int sec, int millis=0) {
+	struct timespec tpc;
+	clock_gettime(CLOCK_REALTIME, &tpc);
+	uint64_t ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000;
+	ts += sec * 1000 + millis; //先统一转换为ms
+	timer_event te(cb, args, ts);
+	return _timer_que->add_timer(te);
 }
 int event_loop::run_every(time_callback cbm void *args, int sec, int millis=0) {
+	uint32_t interval = sec * 1000 + millis;
+	struct timespec tpc;
+	clock_gettime(CLOCK_REALTIME, &tpc);
+    uint64_t ts = tpc.tv_sec * 1000 + tpc.tv_nsec / 1000000UL + interval;
+    timer_event te(cb, args, ts, interval);
+    return _timer_que->add_timer(te);
 }
+
 void event_loop::del_timer(int timer_id) {
 }
 
