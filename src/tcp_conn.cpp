@@ -58,7 +58,13 @@ void tcp_conn::handle_read() {
 	commu_head head;
 	//每次都处理一个完整的数据包，不完整不处理
 	while(_ibuf.length() >= COMMU_HEAD_LENGTH) {
-		::memcpy(&head, _ibuf->data(), COMMU_HEAD_LENGTH);
+		::memcpy(&head, _ibuf->data(), COMMU_HEAD_LENGTH);//这里存在跨平台问题，大端小端，结构体的大小。
+		/***
+		head结构体定义的时候，应该用uint32_t而不是int。
+		head.cmdid = ntohs(*(uint32_t*)(_ibuf_data()));
+		head.length = ntohs(*(uint32_t*)(_ibuf_data() + 4));
+		相应的发送数据的时候也要将head结构体变成网络字节流
+		***/
 		if(head.length > MSG_LENGTH_LIMIT || head.length < 0) {
 			//data format is messed up
             error_log("data format error in data head, close connection");
@@ -119,6 +125,19 @@ int tcp_conn::send_data(const char *data, int datalen, int cmdid) {
 	commu_head head;
 	head.cmdid = cmdid;
 	head.length = datalen;
+	/**
+	要将结构体变成网络字节序
+	uint32_t *data = (uint32_t*)&head.cmdid;
+	ret = _obuf->send(data, 4);
+	if (ret != 0) {
+		return -1;
+	}
+	data = (uint32_t*)&head.length;
+	ret = _obuf->send(data, 4);
+	if (ret != 0) {
+		return -1;
+	}
+	**/
 	ret = _obuf->send(&head, COMMU_HEAD_LENGTH);
 	if (ret != 0) {
 		return -1;
